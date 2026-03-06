@@ -156,4 +156,5 @@ export interface HomeProfileResult {
   days_total: number;
   xpEarned?: number;
   perfectStreakWeeks: number;
+  weeklyPlanUnlocked?: boolean;
 }
