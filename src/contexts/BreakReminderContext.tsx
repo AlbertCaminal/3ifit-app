@@ -14,6 +14,7 @@ const STORAGE_KEYS = {
   enabled: "pausas_reminder_enabled",
   start: "pausas_reminder_start",
   end: "pausas_reminder_end",
+  lastShownHour: "pausas_reminder_last_hour",
 } as const;
 
 const DEFAULT_START = "09:00";
@@ -53,7 +54,6 @@ export function BreakReminderProvider({
   pausasUnlocked = true,
 }: BreakReminderProviderProps) {
   const [showPopup, setShowPopup] = useState(false);
-  const lastHourChecked = useRef<number | null>(null);
 
   const requestNotificationPermission = useCallback(async () => {
     if (typeof window === "undefined" || !("Notification" in window)) return false;
@@ -79,8 +79,9 @@ export function BreakReminderProvider({
         if (!isWithinRange(now, start, end)) return;
 
         const currentHour = now.getHours();
-        if (lastHourChecked.current === currentHour) return;
-        lastHourChecked.current = currentHour;
+        const lastShown = localStorage.getItem(STORAGE_KEYS.lastShownHour);
+        if (lastShown !== null && parseInt(lastShown, 10) === currentHour) return;
+        localStorage.setItem(STORAGE_KEYS.lastShownHour, String(currentHour));
 
         if (Notification.permission === "granted") {
           new Notification("Pausa activa", {
