@@ -21,7 +21,7 @@ export function NavBar() {
       {tabs.map(({ href, icon: Icon, label }) => {
         const isActive =
           pathname === href ||
-          (href !== "/app/home" && pathname.startsWith(href));
+          (href !== "/app/home" && pathname?.startsWith(href));
         const color = isActive
           ? "text-[var(--color-primary)]"
           : "text-[var(--color-icon-inactive)]";
