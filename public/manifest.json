@@ -1,0 +1,24 @@
+{
+  "name": "3iFit — PWA Wellness",
+  "short_name": "3iFit",
+  "description": "App de bienestar corporativo - 5 variaciones UI adaptadas a culturas organizacionales",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f84015",
+  "theme_color": "#f84015",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
