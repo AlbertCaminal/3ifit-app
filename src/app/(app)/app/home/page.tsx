@@ -17,6 +17,7 @@ export default async function HomePage() {
       departmentRanking={departmentRanking}
       xpEarned={profile?.xpEarned}
       perfectStreakWeeks={profile?.perfectStreakWeeks}
+      weeklyPlanUnlocked={(profile as { weeklyPlanUnlocked?: boolean })?.weeklyPlanUnlocked}
     />
   );
 }

@@ -51,7 +51,7 @@ export default withPWA({
       },
       {
         urlPattern:
-          /\/app\/(home|comunidad|ranking|perfil|registrar-actividad)(\/|$)/i,
+          /\/app\/(home|comunidad|ranking|perfil|registrar-actividad|misiones|configuracion)(\/|$)/i,
         handler: "NetworkFirst",
         options: {
           cacheName: "app-routes",

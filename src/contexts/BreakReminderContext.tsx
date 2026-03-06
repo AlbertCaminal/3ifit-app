@@ -25,6 +25,11 @@ interface BreakReminderContextValue {
 
 const BreakReminderContext = createContext<BreakReminderContextValue | null>(null);
 
+interface BreakReminderProviderProps {
+  children: ReactNode;
+  pausasUnlocked?: boolean;
+}
+
 function parseTime(str: string): { h: number; m: number } {
   const [h, m] = str.split(":").map(Number);
   return { h: h ?? 9, m: m ?? 0 };
@@ -43,7 +48,10 @@ function isWithinRange(now: Date, startStr: string, endStr: string): boolean {
   return nowM >= startM || nowM < endM;
 }
 
-export function BreakReminderProvider({ children }: { children: ReactNode }) {
+export function BreakReminderProvider({
+  children,
+  pausasUnlocked = true,
+}: BreakReminderProviderProps) {
   const [showPopup, setShowPopup] = useState(false);
   const lastHourChecked = useRef<number | null>(null);
 
@@ -60,6 +68,7 @@ export function BreakReminderProvider({ children }: { children: ReactNode }) {
 
     const check = () => {
       try {
+        if (!pausasUnlocked) return;
         const enabled = localStorage.getItem(STORAGE_KEYS.enabled) === "true";
         if (!enabled) return;
 
@@ -89,7 +98,7 @@ export function BreakReminderProvider({ children }: { children: ReactNode }) {
     check();
     const id = setInterval(check, 60 * 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [pausasUnlocked]);
 
   const dismissPopup = useCallback(() => setShowPopup(false), []);
 

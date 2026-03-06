@@ -33,6 +33,7 @@ export async function getHomeDataRpc(): Promise<HomeProfileResult | null> {
     days_total: (obj.days_total as number) ?? 3,
     xpEarned: obj.xpEarned != null ? (obj.xpEarned as number) : undefined,
     perfectStreakWeeks: (obj.perfectStreakWeeks as number) ?? 0,
+    weeklyPlanUnlocked: (obj.firstWeeklyPlanUnlocked as boolean) ?? false,
   };
 }
 
@@ -130,8 +131,14 @@ export async function getHomeProfile() {
   const todayGoal = PLAN_MINUTES[plan] ?? 30;
 
   let xpEarned: number | undefined;
+  let weeklyPlanUnlocked = false;
   const existingLastWeek = existingLastWeekResult.data;
   const existingCurrentWeek = existingCurrentWeekResult.data;
+
+  const { count: completionsCount } = await supabase
+    .from("weekly_plan_completions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
 
   if (!existingLastWeek) {
     const { data: lastWeekActivities } = await supabase
@@ -150,6 +157,7 @@ export async function getHomeProfile() {
     const lastWeekTotal = PLAN_DAYS_LEGACY[lastWeekPlan] ?? 3;
 
     if (lastWeekDays.size >= lastWeekTotal) {
+      if ((completionsCount ?? 0) === 0) weeklyPlanUnlocked = true;
       await supabase.from("weekly_plan_completions").insert({
         user_id: user.id,
         week_start: lastWeekStartStr,
@@ -170,6 +178,7 @@ export async function getHomeProfile() {
   }
 
   if (!existingCurrentWeek && daysCompleted >= daysTotal) {
+    if ((completionsCount ?? 0) === 0) weeklyPlanUnlocked = true;
     await supabase.from("weekly_plan_completions").insert({
       user_id: user.id,
       week_start: weekStartStr,
@@ -220,5 +229,6 @@ export async function getHomeProfile() {
     days_total: daysTotal,
     xpEarned,
     perfectStreakWeeks,
+    weeklyPlanUnlocked,
   };
 }

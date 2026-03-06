@@ -91,14 +91,21 @@ export async function registerActivity(formData: {
     return { success: false, error: error.message };
   }
 
-  const res = result as { success?: boolean; error?: string; xpEarned?: number } | null;
+  const res = result as {
+    success?: boolean;
+    error?: string;
+    xpEarned?: number;
+    firstActivityUnlocked?: boolean;
+  } | null;
   if (!res?.success) {
     return { success: false, error: res?.error ?? "Error al registrar" };
   }
 
   revalidatePath("/app/misiones");
+  revalidatePath("/app/configuracion");
   return {
     success: true,
     xpEarned: res.xpEarned && res.xpEarned > 0 ? res.xpEarned : undefined,
+    darkModeUnlocked: res.firstActivityUnlocked ?? false,
   };
 }

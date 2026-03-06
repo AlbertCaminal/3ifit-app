@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const PLAN_COLORS = {
   basico: {
@@ -84,7 +85,12 @@ export function DonutChart({
   });
 
   return (
-    <div className="relative flex shrink-0 items-center justify-center">
+    <div
+      className={cn(
+        "relative flex shrink-0 items-center justify-center",
+        isCompleted && "animate-donut-complete",
+      )}
+    >
       <svg width={size} height={size} viewBox="0 0 100 100">
         {segments.map((seg, i) => (
           <path key={i} d={seg.d} fill={seg.fill} />

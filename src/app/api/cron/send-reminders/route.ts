@@ -8,6 +8,41 @@ function getReminderPayload(title: string, body: string) {
   return { title, body, icon: "/icons/icon-192.png" };
 }
 
+/** Obtiene el ranking de departamentos para la temporada activa */
+async function getDepartmentRankingForCron(
+  supabase: ReturnType<typeof createAdminClient>,
+  seasonId: string
+): Promise<Map<string, number>> {
+  const { data: entries } = await supabase
+    .from("leaderboard_entries")
+    .select("user_id, minutes")
+    .eq("season_id", seasonId);
+
+  if (!entries?.length) return new Map();
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, department_id")
+    .in("id", entries.map((e) => e.user_id));
+
+  const profileMap = new Map(
+    (profiles ?? []).map((p) => [p.id, p.department_id])
+  );
+  const deptMinutes = new Map<string, number>();
+
+  for (const e of entries) {
+    const deptId = profileMap.get(e.user_id);
+    if (deptId) {
+      deptMinutes.set(deptId, (deptMinutes.get(deptId) ?? 0) + (e.minutes ?? 0));
+    }
+  }
+
+  const sorted = [...deptMinutes.entries()].sort((a, b) => b[1] - a[1]);
+  const rankMap = new Map<string, number>();
+  sorted.forEach(([deptId], i) => rankMap.set(deptId, i + 1));
+  return rankMap;
+}
+
 async function handleCron() {
   const vapidPublic = process.env.VAPID_PUBLIC_KEY;
   const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
@@ -27,6 +62,8 @@ async function handleCron() {
   const supabase = createAdminClient();
   const now = new Date();
   const currentHour = now.getHours();
+  const today = now.toISOString().slice(0, 10);
+
   const { data: subs } = await supabase
     .from("push_subscriptions")
     .select("user_id, endpoint, p256dh, auth");
@@ -38,17 +75,31 @@ async function handleCron() {
   const userIds = subs.map((s) => s.user_id);
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id")
+    .select("id, department_id, department_rank_last_notified")
     .in("id", userIds)
-    .eq("notifications_enabled", true);
+    .eq("notifications_enabled", true)
+    .eq("weekly_plan_unlocked", true);
 
   const enabledIds = new Set((profiles ?? []).map((p) => p.id));
+
+  const { data: activeSeason } = await supabase
+    .from("seasons")
+    .select("id")
+    .lte("start_date", today)
+    .gte("end_date", today)
+    .single();
+
+  const deptRankMap =
+    activeSeason?.id
+      ? await getDepartmentRankingForCron(supabase, activeSeason.id)
+      : new Map<string, number>();
+
   let sent = 0;
 
   for (const sub of subs) {
     if (!enabledIds.has(sub.user_id)) continue;
 
-    const { data } = await supabase.rpc("get_home_data", {
+    const { data } = await supabase.rpc("get_home_data_for_cron", {
       p_user_id: sub.user_id,
     });
 
@@ -58,6 +109,8 @@ async function handleCron() {
     const daysCompleted = (obj.days_completed as number) ?? 0;
     const daysRemaining = Math.max(0, daysTotal - daysCompleted);
     const hasActivityToday = ((obj.today_minutes as number) ?? 0) > 0;
+    const perfectStreakWeeks = (obj.perfectStreakWeeks as number) ?? 0;
+    const departmentId = obj.department_id as string | null;
 
     const payloads: Array<{ title: string; body: string; icon: string }> = [];
 
@@ -72,12 +125,56 @@ async function handleCron() {
     }
 
     if (!hasActivityToday && currentHour >= ACTIVITY_REMINDER_HOUR) {
-      payloads.push(
-        getReminderPayload(
-          "Actividad diaria",
-          "Aún no has registrado actividad hoy, ¡no pierdas tu racha!"
-        )
-      );
+      if (perfectStreakWeeks >= 1) {
+        const weeksText =
+          perfectStreakWeeks === 1
+            ? "1 semana"
+            : `${perfectStreakWeeks} semanas`;
+        payloads.push(
+          getReminderPayload(
+            "Racha en riesgo",
+            `Llevas ${weeksText} de racha. Registra actividad hoy para no perderla.`
+          )
+        );
+      } else {
+        payloads.push(
+          getReminderPayload(
+            "Actividad diaria",
+            "Aún no has registrado actividad hoy, ¡no pierdas tu racha!"
+          )
+        );
+      }
+    }
+
+    let rankingNotificationSent = false;
+    if (departmentId && deptRankMap.size > 0) {
+      const currentRank = deptRankMap.get(departmentId);
+      const profile = profiles?.find((p) => p.id === sub.user_id);
+      const lastNotified = profile?.department_rank_last_notified ?? null;
+
+      if (
+        typeof currentRank === "number" &&
+        lastNotified !== null &&
+        currentRank !== lastNotified
+      ) {
+        const direction =
+          currentRank < lastNotified ? "subido" : "bajado";
+        const posText =
+          currentRank === 1
+            ? "1º"
+            : currentRank === 2
+              ? "2º"
+              : currentRank === 3
+                ? "3º"
+                : `${currentRank}º`;
+        payloads.push(
+          getReminderPayload(
+            "Ranking",
+            `Tu equipo ha ${direction} al puesto ${posText} en el ranking.`
+          )
+        );
+        rankingNotificationSent = true;
+      }
     }
 
     for (const payload of payloads) {
@@ -102,6 +199,23 @@ async function handleCron() {
           }
         }
       }
+    }
+
+    const currentRank =
+      departmentId && deptRankMap.size > 0
+        ? deptRankMap.get(departmentId)
+        : undefined;
+    const profile = profiles?.find((p) => p.id === sub.user_id);
+    const lastNotified = profile?.department_rank_last_notified ?? null;
+    if (
+      departmentId &&
+      typeof currentRank === "number" &&
+      (rankingNotificationSent || lastNotified === null)
+    ) {
+      await supabase
+        .from("profiles")
+        .update({ department_rank_last_notified: currentRank })
+        .eq("id", sub.user_id);
     }
   }
 

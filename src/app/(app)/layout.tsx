@@ -1,7 +1,10 @@
 import { BreakReminderProvider } from "@/contexts/BreakReminderContext";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
 import { XPProvider } from "@/contexts/XPContext";
-import { getNotificationsEnabled } from "./app/configuracion/actions";
+import {
+  getNotificationsEnabled,
+  getWeeklyPlanUnlocked,
+} from "./app/configuracion/actions";
 import { AppShell } from "./AppShell";
 
 export default async function AppLayout({
@@ -9,12 +12,17 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const initialNotificationsEnabled = await getNotificationsEnabled();
+  const [initialNotificationsEnabled, weeklyPlanUnlocked] = await Promise.all([
+    getNotificationsEnabled(),
+    getWeeklyPlanUnlocked(),
+  ]);
 
   return (
     <XPProvider>
-      <NotificationsProvider initialEnabled={initialNotificationsEnabled}>
-        <BreakReminderProvider>
+      <NotificationsProvider
+        initialEnabled={initialNotificationsEnabled && weeklyPlanUnlocked}
+      >
+        <BreakReminderProvider pausasUnlocked={weeklyPlanUnlocked}>
           <AppShell>{children}</AppShell>
         </BreakReminderProvider>
       </NotificationsProvider>

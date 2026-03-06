@@ -40,6 +40,8 @@ interface ConfiguracionClientProps {
   initialPrivacy: boolean;
   initialDepartmentId: string | null;
   initialNotificationsEnabled: boolean;
+  initialDarkModeUnlocked: boolean;
+  initialWeeklyPlanUnlocked: boolean;
   departments: Department[];
   planChangedThisWeek?: boolean;
   departmentChangedThisWeek?: boolean;
@@ -50,6 +52,8 @@ export default function ConfiguracionClient({
   initialPrivacy,
   initialDepartmentId,
   initialNotificationsEnabled,
+  initialDarkModeUnlocked,
+  initialWeeklyPlanUnlocked,
   departments,
   planChangedThisWeek = false,
   departmentChangedThisWeek = false,
@@ -177,22 +181,32 @@ export default function ConfiguracionClient({
         </div>
       )}
       <div className="flex flex-1 flex-col gap-5 overflow-auto p-6">
-        <Card variant="compact" className="flex items-center justify-between">
-          <span className="text-sm text-[var(--color-text-primary)]">
-            Notificaciones
-          </span>
-          <Toggle
-            checked={notificationsEnabled}
-            onChange={handleNotificationsToggle}
-          />
-        </Card>
+        {!initialWeeklyPlanUnlocked && (
+          <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+            Completa tu plan semanal por primera vez para desbloquear notificaciones push y el recordatorio de pausas activas.
+          </div>
+        )}
 
-        <Card variant="compact" className="flex items-center justify-between">
-          <span className="text-sm text-[var(--color-text-primary)]">
-            Modo oscuro
-          </span>
-          <Toggle checked={isDark} onChange={toggleTheme} />
-        </Card>
+        {initialWeeklyPlanUnlocked && (
+          <Card variant="compact" className="flex items-center justify-between">
+            <span className="text-sm text-[var(--color-text-primary)]">
+              Notificaciones
+            </span>
+            <Toggle
+              checked={notificationsEnabled}
+              onChange={handleNotificationsToggle}
+            />
+          </Card>
+        )}
+
+        {initialDarkModeUnlocked && (
+          <Card variant="compact" className="flex items-center justify-between">
+            <span className="text-sm text-[var(--color-text-primary)]">
+              Modo oscuro
+            </span>
+            <Toggle checked={isDark} onChange={toggleTheme} />
+          </Card>
+        )}
 
         <div className="flex flex-col gap-3">
           <h2 className="text-[15px] font-semibold text-[var(--color-text-primary)]">
@@ -282,6 +296,7 @@ export default function ConfiguracionClient({
           </Card>
         </div>
 
+        {initialWeeklyPlanUnlocked && (
         <div className="flex flex-col gap-2">
           <h2 className="text-[15px] font-semibold text-[var(--color-text-primary)]">
             Recordatorio de pausas activas
@@ -388,6 +403,7 @@ export default function ConfiguracionClient({
             </div>
           )}
         </div>
+        )}
 
         <button
           type="button"

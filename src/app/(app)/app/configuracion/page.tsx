@@ -23,6 +23,10 @@ export default async function ConfiguracionPage() {
   const departmentId = profile?.department_id ?? null;
   const notificationsEnabled =
     (profile as { notifications_enabled?: boolean } | null)?.notifications_enabled ?? true;
+  const darkModeUnlocked =
+    (profile as { dark_mode_unlocked?: boolean } | null)?.dark_mode_unlocked ?? false;
+  const weeklyPlanUnlocked =
+    (profile as { weekly_plan_unlocked?: boolean } | null)?.weekly_plan_unlocked ?? false;
   const currentWeek = getWeekStart(new Date());
   const planChangedThisWeek =
     (profile as { plan_changed_week_start?: string | null } | null)
@@ -37,6 +41,8 @@ export default async function ConfiguracionPage() {
       initialPrivacy={privacy}
       initialDepartmentId={departmentId}
       initialNotificationsEnabled={notificationsEnabled}
+      initialDarkModeUnlocked={darkModeUnlocked}
+      initialWeeklyPlanUnlocked={weeklyPlanUnlocked}
       departments={departments}
       planChangedThisWeek={planChangedThisWeek}
       departmentChangedThisWeek={departmentChangedThisWeek}

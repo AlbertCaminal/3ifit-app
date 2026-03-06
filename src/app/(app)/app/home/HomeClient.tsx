@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppLink as Link } from "@/components/ui/AppLink";
 import { Flame, Trophy } from "lucide-react";
@@ -13,10 +13,12 @@ import { getLevelName, getLevelColor } from "@/lib/levels";
 import { getRankColor } from "@/lib/rankColors";
 import type { DepartmentRankingEntry } from "../ranking/actions";
 import { AlertCircle } from "lucide-react";
+import { fireworks } from "@/lib/celebration";
 
 type Plan = keyof typeof PLAN_COLORS;
 
 interface HomeClientProps {
+  weeklyPlanUnlocked?: boolean;
   profile: {
     avatar_url: string | null;
     full_name: string | null;
@@ -39,9 +41,12 @@ export default function HomeClient({
   departmentRanking,
   xpEarned,
   perfectStreakWeeks = 0,
+  weeklyPlanUnlocked = false,
 }: HomeClientProps) {
   const { showXP } = useXP();
   const router = useRouter();
+  const [showWeeklyPlanUnlockModal, setShowWeeklyPlanUnlockModal] =
+    useState(false);
 
   if (profile === null) {
     return (
@@ -64,6 +69,17 @@ export default function HomeClient({
     }
   }, [xpEarned, showXP]);
 
+  useEffect(() => {
+    if (
+      weeklyPlanUnlocked &&
+      typeof window !== "undefined" &&
+      !localStorage.getItem("3ifit-weekly-plan-unlock-shown")
+    ) {
+      setShowWeeklyPlanUnlockModal(true);
+      fireworks();
+    }
+  }, [weeklyPlanUnlocked]);
+
   const plan = (profile?.plan ?? "pro") as Plan;
   const daysTotal = profile?.days_total ?? 5;
   const daysCompleted = profile?.days_completed ?? 0;
@@ -79,6 +95,44 @@ export default function HomeClient({
 
   return (
     <div className="flex flex-1 flex-col bg-[var(--background)]">
+      {showWeeklyPlanUnlockModal && (
+        <div
+          role="presentation"
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="weekly-unlock-title"
+            className="w-full max-w-sm rounded-2xl bg-[var(--color-bg-card)] p-6 shadow-xl"
+          >
+            <h3
+              id="weekly-unlock-title"
+              className="text-lg font-bold text-[var(--color-text-primary)]"
+            >
+              ¡Plan semanal completado!
+            </h3>
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+              Has desbloqueado las notificaciones push y el recordatorio de
+              pausas activas. Puedes activarlos en Perfil → Configuración.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("3ifit-weekly-plan-unlock-shown", "true");
+                }
+                setShowWeeklyPlanUnlockModal(false);
+                router.refresh();
+              }}
+              className="btn-primary mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-[var(--color-primary)] text-base font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
       <header className="flex justify-between px-6 py-4">
         <div className="flex gap-3">
           <Link

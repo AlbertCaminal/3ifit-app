@@ -7,12 +7,14 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useRouter } from "next/navigation";
 import { ImagePlus, Sparkles } from "lucide-react";
 import { useXP } from "@/contexts/XPContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { registerActivity } from "./actions";
 import { uploadFeedImage } from "./upload";
 import { compressImageForUpload } from "./compressImage";
 import { uploadFeedImageClient } from "./uploadClient";
 import { isValidImageFile } from "./uploadConstants";
 import { ACTIVITY_TYPES, TIME_PRESETS } from "./constants";
+import { particles } from "@/lib/celebration";
 
 interface XpStatus {
   activityXPClaimed: boolean;
@@ -28,6 +30,7 @@ export default function RegistrarActividadClient({
 }: RegistrarActividadClientProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDarkModeUnlockModal, setShowDarkModeUnlockModal] = useState(false);
   const [activityType, setActivityType] = useState<string | null>(null);
   const [minutes, setMinutes] = useState<number | null>(null);
   const [shareToFeed, setShareToFeed] = useState(true);
@@ -36,6 +39,7 @@ export default function RegistrarActividadClient({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showXP } = useXP();
+  const { setDarkModeUnlocked } = useTheme();
   const router = useRouter();
 
   const handleFileSelect = async (file: File) => {
@@ -97,7 +101,13 @@ export default function RegistrarActividadClient({
 
       if (result.success) {
         if (result.xpEarned && result.xpEarned > 0) showXP(result.xpEarned);
-        router.push("/app/home");
+        if (result.darkModeUnlocked) {
+          setDarkModeUnlocked(true);
+          setShowDarkModeUnlockModal(true);
+          particles();
+        } else {
+          router.push("/app/home");
+        }
         return; // No llamar setLoading(false): el botón sigue deshabilitado hasta navegar
       }
       setError(result.error ?? "Error al registrar");
@@ -258,6 +268,41 @@ export default function RegistrarActividadClient({
         </div>
 
         {error && <p className="text-sm font-medium text-red-600">{error}</p>}
+
+        {showDarkModeUnlockModal && (
+          <div
+            role="presentation"
+            className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4"
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="dark-unlock-title"
+              className="w-full max-w-sm rounded-2xl bg-[var(--color-bg-card)] p-6 shadow-xl"
+            >
+              <h3
+                id="dark-unlock-title"
+                className="text-lg font-bold text-[var(--color-text-primary)]"
+              >
+                ¡Modo oscuro desbloqueado!
+              </h3>
+              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                Has registrado tu primera actividad. Ya puedes activar el modo
+                oscuro en Perfil → Configuración.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDarkModeUnlockModal(false);
+                  router.push("/app/home");
+                }}
+                className="btn-primary mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-[var(--color-primary)] text-base font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-auto flex flex-col gap-2.5 pt-2 pb-1">
           <button

@@ -4,6 +4,38 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { updateProfileSettingsSchema } from "@/lib/validations";
 
+export async function getWeeklyPlanUnlocked(): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("weekly_plan_unlocked")
+    .eq("id", user.id)
+    .single();
+
+  return (data?.weekly_plan_unlocked ?? false) as boolean;
+}
+
+export async function getDarkModeUnlocked(): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("dark_mode_unlocked")
+    .eq("id", user.id)
+    .single();
+
+  return (data?.dark_mode_unlocked ?? false) as boolean;
+}
+
 export async function getNotificationsEnabled(): Promise<boolean> {
   const supabase = await createClient();
   const {
@@ -39,7 +71,7 @@ export async function getProfileSettings() {
 
   const { data } = await supabase
     .from("profiles")
-    .select("plan, privacy_individual, department_id, plan_changed_week_start, department_changed_week_start, notifications_enabled, departments(name)")
+    .select("plan, privacy_individual, department_id, plan_changed_week_start, department_changed_week_start, notifications_enabled, dark_mode_unlocked, weekly_plan_unlocked, departments(name)")
     .eq("id", user.id)
     .single();
 
@@ -82,6 +114,20 @@ export async function updateProfileSettings(updates: {
   if (!user) return { success: false, error: "No autenticado" };
 
   const updatesPayload = parsed.data;
+
+  if (updatesPayload.notifications_enabled === true) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("weekly_plan_unlocked")
+      .eq("id", user.id)
+      .single();
+    if (!(profile?.weekly_plan_unlocked ?? false)) {
+      return {
+        success: false,
+        error: "Completa tu plan semanal por primera vez para activar las notificaciones.",
+      };
+    }
+  }
 
   if (updatesPayload.plan !== undefined) {
     const { data: profile } = await supabase

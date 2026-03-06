@@ -4,6 +4,7 @@ import "./globals.css";
 import { EnvGuard } from "@/components/EnvGuard";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeUnlockSync } from "@/components/ThemeUnlockSync";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,9 +26,13 @@ function ThemeInitScript() {
 export const metadata: Metadata = {
   title: "3iFit — PWA Wellness",
   description:
-    "App de bienestar corporativo - 5 variaciones UI adaptadas a culturas organizacionales",
+    "App de bienestar corporativo - Plan semanal, misiones, ranking y comunidad",
   manifest: "/manifest.json",
   icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
     apple: "/icons/icon-192.png",
   },
   appleWebApp: {
@@ -35,10 +40,17 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "3iFit",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: "#f84015",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -60,6 +72,7 @@ export default function RootLayout({
         </a>
         <EnvGuard>
           <ThemeProvider>
+            <ThemeUnlockSync />
             <AuthProvider>{children}</AuthProvider>
           </ThemeProvider>
         </EnvGuard>
