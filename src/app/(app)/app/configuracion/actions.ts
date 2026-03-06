@@ -45,11 +45,14 @@ export async function getNotificationsEnabled(): Promise<boolean> {
 
   const { data } = await supabase
     .from("profiles")
-    .select("notifications_enabled")
+    .select("notifications_enabled, weekly_plan_unlocked")
     .eq("id", user.id)
     .single();
 
-  return (data?.notifications_enabled ?? true) as boolean;
+  // Las notificaciones solo están "activas" si el usuario desbloqueó (completó plan semanal)
+  const unlocked = data?.weekly_plan_unlocked ?? false;
+  const enabled = data?.notifications_enabled ?? true;
+  return unlocked && enabled;
 }
 
 export async function getDepartments() {

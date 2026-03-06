@@ -181,12 +181,6 @@ export default function ConfiguracionClient({
         </div>
       )}
       <div className="flex flex-1 flex-col gap-5 overflow-auto p-6">
-        {!initialWeeklyPlanUnlocked && (
-          <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-            Completa tu plan semanal por primera vez para desbloquear notificaciones push y el recordatorio de pausas activas.
-          </div>
-        )}
-
         {initialWeeklyPlanUnlocked && (
           <Card variant="compact" className="flex items-center justify-between">
             <span className="text-sm text-[var(--color-text-primary)]">
