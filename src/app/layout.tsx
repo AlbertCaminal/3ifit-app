@@ -24,7 +24,7 @@ function ThemeInitScript() {
 }
 
 export const metadata: Metadata = {
-  title: "3iFit — PWA Wellness",
+  title: "3iFit",
   description:
     "App de bienestar corporativo - Plan semanal, misiones, ranking y comunidad",
   manifest: "/manifest.json",

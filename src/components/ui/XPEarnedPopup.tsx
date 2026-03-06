@@ -14,16 +14,14 @@ interface XPEarnedPopupProps {
   onComplete?: () => void;
 }
 
-const POPUP_DURATION_MS = 1500;
+const POPUP_DURATION_MS = 800;
 
 function triggerCelebration(amount: number) {
-  if (amount >= 75) {
-    fireworks();
-  } else if (amount >= 50) {
-    missionComplete();
-  } else {
-    confettiBurst();
-  }
+  requestAnimationFrame(() => {
+    if (amount >= 75) fireworks();
+    else if (amount >= 50) missionComplete();
+    else confettiBurst();
+  });
 }
 
 export function XPEarnedPopup({

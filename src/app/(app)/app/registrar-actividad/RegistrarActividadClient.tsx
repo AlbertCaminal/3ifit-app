@@ -35,8 +35,8 @@ export default function RegistrarActividadClient({
   const [minutes, setMinutes] = useState<number | null>(null);
   const [shareToFeed, setShareToFeed] = useState(true);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [compressedFile, setCompressedFile] = useState<File | null>(null);
   const [preUploadedUrl, setPreUploadedUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showXP } = useXP();
   const { setDarkModeUnlocked } = useTheme();
@@ -44,29 +44,25 @@ export default function RegistrarActividadClient({
 
   const handleFileSelect = async (file: File) => {
     setPhotoFile(file);
+    setCompressedFile(null);
     setPreUploadedUrl(null);
     setShareToFeed(true);
-    setUploading(true);
     setError(null);
     try {
       const compressed = await compressImageForUpload(file);
       if (!isValidImageFile(compressed)) {
         setError("La imagen debe ser JPEG, PNG o WebP y máximo 10 MB.");
         setPhotoFile(null);
-        setPreUploadedUrl(null);
         return;
       }
+      setCompressedFile(compressed);
       const fd = new FormData();
       fd.append("file", compressed);
       let url = await uploadFeedImage(fd);
-      if (!url) {
-        url = await uploadFeedImageClient(compressed);
-      }
+      if (!url) url = await uploadFeedImageClient(compressed);
       setPreUploadedUrl(url);
     } catch {
       setPreUploadedUrl(null);
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -82,11 +78,11 @@ export default function RegistrarActividadClient({
       let imageUrl = preUploadedUrl;
       if (photoFile && shareToFeed && !imageUrl) {
         try {
-          const compressed = await compressImageForUpload(photoFile);
+          const toUpload = compressedFile ?? (await compressImageForUpload(photoFile));
           const fd = new FormData();
-          fd.append("file", compressed);
+          fd.append("file", toUpload);
           imageUrl = await uploadFeedImage(fd);
-          if (!imageUrl) imageUrl = await uploadFeedImageClient(compressed);
+          if (!imageUrl) imageUrl = await uploadFeedImageClient(toUpload);
         } catch {
           setError("No se pudo subir la imagen. Se guardará sin foto.");
         }
@@ -104,7 +100,7 @@ export default function RegistrarActividadClient({
         if (result.darkModeUnlocked) {
           setDarkModeUnlocked(true);
           setShowDarkModeUnlockModal(true);
-          particles();
+          requestAnimationFrame(() => particles());
         } else {
           router.push("/app/home");
         }
@@ -256,13 +252,11 @@ export default function RegistrarActividadClient({
                   : "text-[var(--color-text-muted-light)]"
               }`}
             >
-              {uploading
-                ? "Subiendo..."
-                : photoFile
-                  ? preUploadedUrl
-                    ? "Foto lista"
-                    : "Foto seleccionada"
-                  : "Añadir Foto (Opcional)"}
+              {photoFile
+                ? preUploadedUrl
+                  ? "Foto lista"
+                  : "Foto seleccionada"
+                : "Añadir Foto (Opcional)"}
             </span>
           </button>
         </div>
